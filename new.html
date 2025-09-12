@@ -1,11 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Online Exam</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #warning { 
+      display: none; 
+      color: red; 
+      font-weight: bold; 
+      margin-top: 10px; 
+    }
+  </style>
 </head>
 <body>
-  
+  <h1>Exam Page</h1>
+  <p>Do not leave this tab during the exam.</p>
+  <form>
+    <label>Question 1: What is 2+2?</label><br>
+    <input type="text" name="q1"/><br><br>
+    <button type="submit">Submit</button>
+  </form>
+  <div id="warning"></div>
+
+  <script>
+    let violationCount = 0;
+    const warningDiv = document.getElementById('warning');
+    const studentId = "student_123"; // Replace dynamically in production
+
+    function showWarning(message) {
+      warningDiv.textContent = message;
+      warningDiv.style.display = "block";
+    }
+
+    async function logViolation() {
+      await fetch('http://127.0.0.1:5000/log-violation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, timestamp: new Date().toISOString() })
+      });
+    }
+
+    window.addEventListener('blur', () => {
+      violationCount++;
+      if (violationCount === 1) {
+        showWarning("Warning: Please stay on the exam page.");
+      } else if (violationCount === 2) {
+        showWarning("Second Warning: Further tab switching will be reported.");
+      } else {
+        showWarning("Violation logged. Instructor will review your activity.");
+      }
+      logViolation();
+    });
+  </script>
 </body>
 </html>
