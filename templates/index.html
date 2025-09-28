@@ -1,0 +1,144 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disaster Response Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Disaster Response Dashboard</h1>
+
+        <div class="section">
+            <h2>Report a Need</h2>
+            <form id="reportNeedForm">
+                <label for="reporterIdNeed">Your ID:</label>
+                <input type="text" id="reporterIdNeed" value="user123" required><br>
+                <label for="needMessage">What do you need?</label>
+                <textarea id="needMessage" placeholder="e.g., I need medical help for an injured person near Main St. and Elm Ave." required></textarea><br>
+                <label for="needLocationLat">Latitude:</label>
+                <input type="number" id="needLocationLat" value="34.0522" step="0.0001" required><br>
+                <label for="needLocationLon">Longitude:</label>
+                <input type="number" id="needLocationLon" value="-118.2437" step="0.0001" required><br>
+                <button type="submit">Report Need</button>
+            </form>
+            <h3>Reported Needs</h3>
+            <div id="needsList" class="list"></div>
+        </div>
+
+        <div class="section">
+            <h2>Offer a Resource</h2>
+            <form id="offerResourceForm">
+                <label for="providerIdResource">Your ID:</label>
+                <input type="text" id="providerIdResource" value="org456" required><br>
+                <label for="resourceType">Type:</label>
+                <select id="resourceType">
+                    <option value="volunteer">Volunteer</option>
+                    <option value="medical_volunteer">Medical Volunteer</option>
+                    <option value="shelter">Shelter</option>
+                    <option value="food_supply">Food Supply</option>
+                    <option value="water_supply">Water Supply</option>
+                    <option value="charging_station">Charging Station</option>
+                </select><br>
+                <label for="resourceDescription">Description:</label>
+                <input type="text" id="resourceDescription" placeholder="e.g., Can offer first aid" required><br>
+                <label for="resourceLocationLat">Latitude:</label>
+                <input type="number" id="resourceLocationLat" value="34.0530" step="0.0001" required><br>
+                <label for="resourceLocationLon">Longitude:</label>
+                <input type="number" id="resourceLocationLon" value="-118.2450" step="0.0001" required><br>
+                <button type="submit">Offer Resource</button>
+            </form>
+            <h3>Available Resources</h3>
+            <div id="resourcesList" class="list"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('reportNeedForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const response = await fetch('/report_need', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    reporter_id: document.getElementById('reporterIdNeed').value,
+                    message: document.getElementById('needMessage').value,
+                    location: {
+                        lat: parseFloat(document.getElementById('needLocationLat').value),
+                        lon: parseFloat(document.getElementById('needLocationLon').value)
+                    }
+                }),
+            });
+            const data = await response.json();
+            console.log(data);
+            fetchNeeds(); // Refresh the list
+        });
+
+        document.getElementById('offerResourceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const response = await fetch('/offer_resource', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    provider_id: document.getElementById('providerIdResource').value,
+                    type: document.getElementById('resourceType').value,
+                    description: document.getElementById('resourceDescription').value,
+                    location: {
+                        lat: parseFloat(document.getElementById('resourceLocationLat').value),
+                        lon: parseFloat(document.getElementById('resourceLocationLon').value)
+                    }
+                }),
+            });
+            const data = await response.json();
+            console.log(data);
+            fetchResources(); // Refresh the list
+        });
+
+        async function fetchNeeds() {
+            const response = await fetch('/get_needs');
+            const needs = await response.json();
+            const needsList = document.getElementById('needsList');
+            needsList.innerHTML = '';
+            needs.forEach(need => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<strong>Need:</strong> ${need.message}<br>
+                                 <strong>Priority:</strong> ${need.priority}<br>
+                                 <strong>Location:</strong> Lat: ${need.location.lat}, Lon: ${need.location.lon}<br>
+                                 <strong>Status:</strong> ${need.status}
+                                 <small>${new Date(need.timestamp).toLocaleString()}</small>`;
+                needsList.appendChild(div);
+            });
+        }
+
+        async function fetchResources() {
+            const response = await fetch('/get_resources');
+            const resources = await response.json();
+            const resourcesList = document.getElementById('resourcesList');
+            resourcesList.innerHTML = '';
+            resources.forEach(resource => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<strong>Type:</strong> ${resource.type}<br>
+                                 <strong>Description:</strong> ${resource.description}<br>
+                                 <strong>Location:</strong> Lat: ${resource.location.lat}, Lon: ${resource.location.lon}<br>
+                                 <strong>Status:</strong> ${resource.status}
+                                 <small>${new Date(resource.timestamp).toLocaleString()}</small>`;
+                resourcesList.appendChild(div);
+            });
+        }
+
+        // Fetch initial data on page load
+        fetchNeeds();
+        fetchResources();
+        // Optional: refresh every few seconds
+        setInterval(fetchNeeds, 5000);
+        setInterval(fetchResources, 5000);
+    </script>
+</body>
+</html>
